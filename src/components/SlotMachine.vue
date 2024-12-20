@@ -42,60 +42,89 @@
 <script setup>
 import { ref } from "vue";
 
-// 每個輪盤的數字範圍
+//每個數字輪盤的範圍
 const reelSets = [
-  ["L2.png", "L3.png", "L5.png", "L6.png", "L7.png", "L8.png"], // 第一個輪盤圖片
-  ["C8.png", "C9.png"], // 第二個輪盤圖片
-  ["R8.png"], // 第三個輪盤固定為 R8.png
+  ["L2.png", "L3.png", "L5.png", "L6.png", "L7.png", "L8.png"], //第一個輪盤內的圖片
+  ["C8.png", "C9.png"], //第二個輪盤內的圖片
+  ["R3.png", "R5.png", "R6.png", "R7.png", "R8.png", "R9.png"], //第三個輪盤內的圖片
 ];
 
-// 初始化輪盤狀態
+// 初始化輪盤
 const reels = ref([
-  { numbers: createReelSet(reelSets[0]), position: 0 },
+  { numbers: createReelSet(reelSets[0]), position: 5 },
   { numbers: createReelSet(reelSets[1]), position: 0 },
-  { numbers: createReelSet(reelSets[2]), position: 0 },
+  { numbers: createReelSet(reelSets[2]), position: 4 },
 ]);
 
-// 拉桿狀態
+
+// 拉杆状态
 const leverState = ref(false);
 
-// 拉桿觸發
+// 拉杆触发
 const pullLever = () => {
   leverState.value = true;
-  resetPositions(); // 重置輪盤位置
-  startGame(); // 啟動遊戲邏輯
+  resetPositions(); // 重置轮盘位置
+  startGame(); // 启动游戏逻辑
 };
 
 const resetLever = () => {
-  leverState.value = false; // 拉桿回復正常
+  leverState.value = false; // 拉杆恢复正常
 };
 
-// 啟動輪盤滾動邏輯
-const startGame = () => {
-  // 選擇圖片
+// 启动轮盘滚动逻辑
+function startGame() {
+  // 随机选择第一轮图片
   const firstImage = getRandomImage(reelSets[0]);
-  const secondImage =
-    firstImage === "L8.png"
-      ? getRandomImage(reelSets[1].filter((n) => n !== "C9.png"))
-      : getRandomImage(reelSets[1]);
-  const thirdImage = "R8.png";
+  
+  // 根据第一轮图片决定第二轮和第三轮图片
+  const secondImage = decideSecondImage(firstImage);
+  const thirdImage = decideThirdImage(); // 第三轮始终是R8
+
+  // 合并选择的图片
   const selectedImages = [firstImage, secondImage, thirdImage];
+  
+  // 依次滚动轮盘
   reels.value.forEach((reel, index) => {
     rollReel(reel, reelSets[index], selectedImages[index]);
   });
-};
+}
 
-// 滾動單個輪盤
+function decideSecondImage(firstImage) {
+  // 根据第一轮的选择来决定第二轮
+  switch (firstImage) {
+    case "L2.png":
+      return "C9.png"; // 第一轮是2，第二轮是9
+    case "L3.png":
+      return "C9.png"; // 第一轮是3，第二轮是9
+    case "L5.png":
+      return "C8.png"; // 第一轮是5，第二轮是8
+    case "L6.png":
+      return "C8.png"; // 第一轮是6，第二轮是8
+    case "L7.png":
+      return "C9.png"; // 第一轮是7，第二轮是9
+    case "L8.png":
+      return "C8.png"; // 第一轮是8，第二轮是8
+    default:
+      return "C8.png"; // 默认值
+  }
+}
+function decideThirdImage() {
+  // 第三轮始终为R8
+  return "R8.png";
+}
+
+// 随机选择图片
+function getRandomImage(array) {
+  const shuffled = shuffleArray([...array]);
+  return shuffled[0];
+}
+
+// 滚动单个轮盘
 const rollReel = (reel, reelSet, targetImage) => {
   const imageIndex = reelSet.indexOf(targetImage); // 目标图片索引
   const extraCycles = 4; // 额外滚动圈数
   const imageHeight = 180; // 每张图片的高度（确保这个值与图片的实际高度一致）
   const totalImages = reelSet.length; // 图片数量
-  if (targetImage === "R8.png") {
-    reel.isBlurred = true; // 设置标志，应用模糊
-  } else {
-    reel.isBlurred = false; // 其他轮盘不应用模糊
-  }
 
   // 计算滚动位置，确保位置在合理范围
   const position = -(extraCycles * totalImages + imageIndex) * imageHeight;
@@ -104,6 +133,7 @@ const rollReel = (reel, reelSet, targetImage) => {
   const maxPosition = 0; // 最大滚动位置
   const minPosition = -(imageHeight * totalImages); // 最小滚动位置
   reel.position = Math.min(Math.max(position, minPosition), maxPosition);
+
   // 延迟确保滚动动画完成
   setTimeout(() => {
     reel.position = position;
@@ -114,11 +144,7 @@ const resetPositions = () => {
   reels.value.forEach((reel) => (reel.position = 0));
 };
 
-function getRandomImage(array) {
-  const shuffled = shuffleArray([...array]);
-  return shuffled[0];
-}
-
+// 洗牌算法：打乱数组顺序
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -134,6 +160,8 @@ function createReelSet(numbers) {
     .map((_, i) => numbers[i % numbers.length]);
 }
 </script>
+
+
 
 <style scoped>
 .slot-machine {
